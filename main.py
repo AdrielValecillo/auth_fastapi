@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException
 from db.config import engine, SessionLocal
 import db.models
 import db.crud as crud
 import db.schemas as schemas
+
 
 db.models.Base.metadata.create_all(bind=engine)
 
@@ -12,32 +13,47 @@ app = FastAPI()
 def main():
     return {"Hello": "World"}
 
+# ruta para crear un usuario
 @app.post("/crear_usuario")
 def crear_usuario(usuario: schemas.UsuarioCreate):
     db = SessionLocal()
-    return crud.crear_usuario(db, usuario)
+    usuario_creado = crud.crear_usuario(db, usuario)
+    return usuario_creado, HTTPException(status_code=201, detail="Usuario creado correctamente")
 
+# ruta para obtener un usuario
 @app.get("/obtener_usuario/{usuario_id}")
-def obtener_usuario(usuario_id: int):
+def  obtener_usuario(usuario_id: int):
     db = SessionLocal()
-    return crud.obtener_usuario(db, usuario_id)
+    usuario_id = crud.obtener_usuario(db, usuario_id)
+    if not usuario_id:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return usuario_id, HTTPException(status_code=200, detail="Usuario encontrado")
 
+# ruta para obtener todos los usuarios
 @app.get("/obtener_usuarios")
 def obtener_usuarios(skip: int = 0, limit: int = 100):
     db = SessionLocal()
-    return crud.obtener_usuarios(db, skip, limit)
+    usurios = crud.obtener_usuarios(db, skip, limit)
+    return usurios, HTTPException(status_code=200, detail="Usuarios encontrados")
 
+# ruta para actualizar un usuario
 @app.put("/actualizar_usuario/{usuario_id}")
 def actualizar_usuario(usuario_id: int, usuario: schemas.UsuarioBase):
     db = SessionLocal()
-    return crud.actualizar_usuario(db, usuario_id, usuario)
+    usuario_edit = crud.actualizar_usuario(db, usuario_id, usuario)
+    if not usuario_edit:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return HTTPException(status_code=200, detail="Usuario actualizado correctamente")
 
-@app.delete("/eliminar_usuario/{usuario_id}")
+# ruta para eliminar un usuario
+@app.delete("/eliminar_usuario/{usuario_id}", response_model=schemas.UsuarioBase)
 def eliminar_usuario(usuario_id: int):
     db = SessionLocal()
-    return crud.eliminar_usuario(db, usuario_id)
+    crud.eliminar_usuario(db, usuario_id)
+    return HTTPException(status_code=200, detail="Usuario eliminado correctamente")
 
-@app.get("/obtener_usuario_por_email")
+# ruta para obtener un usuario por email
+@app.get("/obtener_usuario_por_email", response_model=schemas.UsuarioBase)
 def obtener_usuario_por_email(email: str):
     db = SessionLocal()
     return crud.obtener_usuario_por_email(db, email)
