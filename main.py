@@ -58,7 +58,7 @@ def  obtener_usuario(usuario_id: int):
     return usuario_id, HTTPException(status_code=200, detail="Usuario encontrado")
 
 # ruta para obtener todos los usuarios
-@app.get("/obtener_usuarios", dependencies=[Depends(JWTBearer())])
+@app.get("/obtener_usuarios" , dependencies=[Depends(JWTBearer())])
 def obtener_usuarios(skip: int = 0, limit: int = 100):
     db = SessionLocal()
     usuarios = crud.obtener_usuarios(db, skip, limit)
@@ -74,15 +74,20 @@ def actualizar_usuario(usuario_id: int, usuario: schemas.UsuarioBase):
     return HTTPException(status_code=200, detail="Usuario actualizado correctamente")
 
 # ruta para eliminar un usuario
-@app.delete("/eliminar_usuario/{usuario_id}", response_model=schemas.UsuarioBase)
+# Eliminar un usuario
+@app.delete("/usuarios/{usuario_id}", response_model=schemas.UsuarioBase)
 def eliminar_usuario(usuario_id: int):
     db = SessionLocal()
+    db_user = crud.obtener_usuario(db, usuario_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
     crud.eliminar_usuario(db, usuario_id)
-    return HTTPException(status_code=200, detail="Usuario eliminado correctamente")
+    return db_user, HTTPException(status_code=200, detail="Usuario eliminado correctamente")
 
 # ruta para obtener un usuario por email
 @app.get("/obtener_usuario_por_email", response_model=schemas.UsuarioBase)
 def obtener_usuario_por_email(email: str):
     db = SessionLocal()
-    return crud.obtener_usuario_por_email(db, email)
+    db_user = crud.obtener_usuario_por_email(db, email)
+    return db_user
 
