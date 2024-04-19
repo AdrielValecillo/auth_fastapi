@@ -6,6 +6,7 @@ import db.crud as crud
 import db.schemas as schemas
 from jwt_manager.jwt_config import create_token, verify_token
 from fastapi.security import HTTPBearer
+import db.crud as crud
 
 db.models.Base.metadata.create_all(bind=engine)
 
@@ -13,12 +14,14 @@ app = FastAPI()
 
 class JWTBearer(HTTPBearer):
     async def __call__(self, request: Request):
-        auth = await super().__call__(request)
-        data = verify_token(auth.credentials)
+        auth = await super().__call__(request) 
         db = SessionLocal()
+        data = verify_token(auth.credentials)
+        if not data:
+            raise HTTPException(status_code=403, detail="Token inválido")
         user = crud.obtener_usuario_por_email(db, data['email'])
-        if data['email'] != user.email:
-            return HTTPException(status_code=403, detail="Credenciales no son validas")
+        if not user or data['email'] != user.email:
+            raise HTTPException(status_code=403, detail="Credenciales no son validas")
 
 @app.get("/")
 def main():
@@ -58,8 +61,8 @@ def  obtener_usuario(usuario_id: int):
 @app.get("/obtener_usuarios", dependencies=[Depends(JWTBearer())])
 def obtener_usuarios(skip: int = 0, limit: int = 100):
     db = SessionLocal()
-    usurios = crud.obtener_usuarios(db, skip, limit)
-    return usurios, HTTPException(status_code=200, detail="Usuarios encontrados")
+    usuarios = crud.obtener_usuarios(db, skip, limit)
+    return usuarios
 
 # ruta para actualizar un usuario
 @app.put("/actualizar_usuario/{usuario_id}")

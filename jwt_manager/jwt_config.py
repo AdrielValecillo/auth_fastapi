@@ -8,6 +8,6 @@ def create_token(data: dict) -> str:
 
 def verify_token(token: str) -> dict:
     data: dict = decode(token, key="secrete_key", algorithms=['HS256'])
-    return print(data)
+    return data
     
     
